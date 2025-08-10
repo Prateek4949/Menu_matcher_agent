@@ -1,35 +1,27 @@
 import gradio as gr
 from agent_menu_matcher_old import MenuMatcherAgent
 from agent_menu_matcher import MetaLlamaLLM, MealPlanStrategistAgent
+import os
 
-def recommend_meals(extracted_items, lat, lng):
-    try:
-        matcher = MenuMatcherAgent(lat=float(lat), lng=float(lng), extracted_items=[extracted_items])
-        matches = matcher.run()
-        strategist = MealPlanStrategistAgent(llm=MetaLlamaLLM())
-        top_meals = strategist.run(matches)
+# Load API key from Hugging Face secret
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-        if not top_meals:
-            return "❌ No meal plans found."
-
-        result_text = ""
-        for idx, meal in enumerate(top_meals, 1):
-            result_text += f"{idx}. {meal['matched_item']} @ {meal['restaurant']} ({meal['location']}) — ₹{meal['price']}\n"
-            result_text += f"   Ingredients: {meal['final_ingredients']}\n\n"
-        return result_text.strip()
-
-    except Exception as e:
-        return f"⚠️ Error: {e}"
+def recommend_meals(query):
+    # Example fixed lat/lng for now
+    lat, lng = 17.4110382, 78.3725869
+    matcher = MenuMatcherAgent(lat=lat, lng=lng, extracted_items=[query])
+    matches = matcher.run()
+    llm = MetaLlamaLLM()
+    strategist = MealPlanStrategistAgent(llm=llm)
+    top_meals = strategist.run(matches)
+    return top_meals
 
 iface = gr.Interface(
     fn=recommend_meals,
-    inputs=[
-        gr.Textbox(label="Dish keyword (e.g. wrap)"),
-        gr.Textbox(label="Latitude"),
-        gr.Textbox(label="Longitude")
-    ],
-    outputs="text",
-    title="Meal Recommendation Agent"
+    inputs=gr.Textbox(label="Enter food name"),
+    outputs="json",
+    title="Meal Recommender",
+    description="Enter a food item and get top healthy meal suggestions."
 )
 
 if __name__ == "__main__":
