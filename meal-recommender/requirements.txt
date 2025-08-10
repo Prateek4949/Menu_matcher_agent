@@ -1,1 +1,6 @@
-
+requests
+boto3
+pandas
+gradio
+crewai
+langchain-core
